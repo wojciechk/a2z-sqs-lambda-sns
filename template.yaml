@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: a2z-TPM-1092
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+
+  SQSQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      QueueName: "TPM-1092-input-queue-final"
+
+  SNSTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      DisplayName: "TPM-1092-output-topic-final"
+      TopicName: "TPM-1092-output-topic-final"
+
+  SNSSubscription:
+    Type: "AWS::SNS::Subscription"
+    Properties:
+      TopicArn: !Ref SNSTopic
+      Endpoint: "wojciech.kaminski@devfactory.com"
+      Protocol: "email"
+      Region: !Ref AWS::Region
+
+  LambdaFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      Environment:
+        Variables:
+          OUPUT_TOPIC_ARN: !Ref SNSTopic
+      Policies:
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt SNSTopic.TopicName
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      CodeUri: ./src
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SQSQueue.Arn
+            BatchSize: 10
+
+Outputs:
+  LambdaFunction:
+    Description: TopicPublisherFunction function name
+    Value: !Ref LambdaFunction
+
+  SNStopicName:
+    Description: SNS topic name
+    Value: !GetAtt SNSTopic.TopicName
+
+  SNStopicARN:
+    Description: SNS topic ARN
+    Value: !Ref SNSTopic
