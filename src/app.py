@@ -6,11 +6,12 @@ FLAGGED_WORDS=['oracle', 'acme', 'azure','foo', 'bar']
 
 OUPUT_TOPIC_ARN=os.getenv('OUPUT_TOPIC_ARN')
 
+SNS = boto3.client ('sns', region_name='us-east-1')
+
 def lambda_handler(event, context):
     print("event: "+json.dumps(event))
 
     records=event['Records']
-    snsClient = boto3.client ('sns', region_name='us-east-1')
     print(records)
     for record in records:
         print(record)
@@ -28,9 +29,7 @@ def lambda_handler(event, context):
                 'statusCode': 200,
                 'body': payload
             }
-            snsClient.publish(TopicArn=OUPUT_TOPIC_ARN, Message=payload, Subject='Match !')
-        #            print("returning response: " + str(response))
-    #           return response
+            SNS.publish(TopicArn=OUPUT_TOPIC_ARN, Message=payload, Subject='Match !')
     return {
         'statusCode': 404
     }
